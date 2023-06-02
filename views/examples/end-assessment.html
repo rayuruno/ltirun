@@ -1,0 +1,5 @@
+<h1>Assessment Ended / Proctoring Stopped!</h1>
+<script>
+  const parent = window.opener || window.parent;
+  parent.postMessage({ subject: "lti.asssesment.end", sub: {{.Sub}} }, "*");
+</script>

@@ -1,0 +1,106 @@
+<div class="grid">
+  <div>
+    <label>Message</label>
+    <textarea id="message"></textarea>
+  </div>
+
+  <div>
+    <label>Request</label>
+    <label>
+      scope
+      <input id="scope" />
+    </label>
+    <label>
+      method
+      <input id="method" />
+    </label>
+    <label>
+      content type
+      <input id="content_type" />
+    </label>
+    <label>
+      accept
+      <input id="accept" />
+    </label>
+    <label>
+      endpoint
+      <input id="endpoint" />
+    </label>
+    <label>
+      body
+      <textarea id="body"></textarea>
+    </label>
+    <button id="button">submit</button>
+
+    <label>Response</label>
+    <textarea id="response"></textarea>
+  </div>
+</div>
+
+<script>
+  const data = JSON.parse({{.Data}});
+  console.debug(data);
+
+  let $message = document.querySelector("#message");
+  let $response = document.querySelector("#response");
+  let $scope = document.querySelector("#scope");
+  let $method = document.querySelector("#method");
+  let $content_type = document.querySelector("#content_type");
+  let $accept = document.querySelector("#accept");
+  let $endpoint = document.querySelector("#endpoint");
+  let $body = document.querySelector("#body");
+  let $button = document.querySelector("#button");
+
+  $message.value = JSON.stringify(data, null, 2);
+
+  let enpoint = data["https://purl.imsglobal.org/spec/lti-ags/claim/endpoint"];
+  let lineitem = enpoint["lineitem"].split("?");
+  $scope.value = enpoint["scope"].join(" ");
+  $endpoint.value = lineitem[0] + "/scores?" + lineitem[1];
+  $method.value = "POST";
+  $content_type.value = "application/vnd.ims.lis.v1.score+json";
+  $accept.value = "application/json";
+  $body.value = JSON.stringify(
+    {
+      timestamp: new Date().toISOString(),
+      userId: data["sub"],
+      comment: "Recording started.",
+      activityProgress: "Completed",
+      gradingProgress: "FullyGraded",
+      scoreGiven: 100,
+      scoreMaximum: 100,
+    },
+    "null",
+    2
+  );
+
+  $button.addEventListener("click", (e) => {
+    serviceRequest({
+      scope: $scope.value,
+      method: $method.value,
+      content_type: $content_type.value,
+      accept: $content_type.value,
+      endpoint: $endpoint.value,
+      body: JSON.parse($body.value),
+    });
+  });
+
+  function serviceRequest(req) {
+    fetch(window.location.pathname.replace("launch", "service"), {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer {{.Token}}",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(req),
+    })
+      .then((r) => {
+        if (r.status >= 400) {
+          return r.text();
+        }
+        return "OK";
+      })
+      .then((msg) => ($response.value = msg))
+      .catch((err) => ($response.value = err.message));
+  }
+</script>

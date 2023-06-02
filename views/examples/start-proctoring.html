@@ -1,0 +1,92 @@
+<div class="grid">
+  <div>
+    <textarea id="message"></textarea>
+  </div>
+
+  <div>
+    <div id="proctoring">
+      <button id="button">Start Assessment</button>
+      <div id="error"></div>
+      <form id="form" method="POST" target="assessment" class="hidden">
+        <input type="hidden" name="JWT" id="JWT" />
+      </form>
+    </div>
+    <iframe name="assessment" id="assessment" class="hidden"></iframe>
+  </div>
+</div>
+
+<script>
+  const data = JSON.parse({{.Data}});
+  console.debug(data);
+
+  let $message = document.querySelector("#message");
+  let $button = document.querySelector("#button");
+  let $form = document.querySelector("#form");
+  let $error = document.querySelector("#error");
+  let $proctoring = document.querySelector("#proctoring");
+  let $assessment = document.querySelector("#assessment");
+  let $JWT = document.querySelector("#JWT");
+
+  $message.value = JSON.stringify(data, null, 2);
+
+    $button.addEventListener("click", (e) => {
+      tokenRequest({
+        "iss":   data["aud"],
+      	"aud":   data["iss"],
+      	"nonce": data["nonce"],
+      	"exp":   Date.now() + 3600000,
+      	"iat":   Date.now(),
+
+      	"https://purl.imsglobal.org/spec/lti/claim/version":         data["https://purl.imsglobal.org/spec/lti/claim/version"],
+      	"https://purl.imsglobal.org/spec/lti/claim/deployment_id":   data["https://purl.imsglobal.org/spec/lti/claim/deployment_id"],
+      	"https://purl.imsglobal.org/spec/lti/claim/message_type":    "LtiStartAssessment",
+      	"https://purl.imsglobal.org/spec/lti/claim/resource_link":   data["https://purl.imsglobal.org/spec/lti/claim/resource_link"],
+      	"https://purl.imsglobal.org/spec/lti/claim/target_link_uri": data["https://purl.imsglobal.org/spec/lti/claim/target_link_uri"],
+      	"https://purl.imsglobal.org/spec/lti/claim/launch_presentation": {
+      		"locale":     data["https://purl.imsglobal.org/spec/lti/claim/launch_presentation"]["locale"],
+      		"return_url": {{.EndAssessmentUri}}+"?sub="+data["sub"],
+      	},
+      	"https://purl.imsglobal.org/spec/lti-ap/claim/attempt_number": data["https://purl.imsglobal.org/spec/lti-ap/claim/attempt_number"],
+      	"https://purl.imsglobal.org/spec/lti-ap/claim/session_data":   data["https://purl.imsglobal.org/spec/lti-ap/claim/session_data"],
+      	"https://purl.imsglobal.org/spec/lti-ap/claim/verified_user": {
+      		"name":        data["name"],
+      		"given_name":  data["given_name"],
+      		"family_name": data["family_name"],
+      		"middle_name": data["middle_name"],
+      		"email":       data["email"],
+      		"picture":     data["picture"],
+      		"locale":      data["locale"],
+      	},
+      	"https://purl.imsglobal.org/spec/lti-ap/claim/end_assessment_return": true,
+      }).then(jwt => {
+   		const startAssessmentUrl = data["https://purl.imsglobal.org/spec/lti-ap/claim/start_assessment_url"]
+   			$form.setAttribute("action", startAssessmentUrl);
+   			$JWT.value = jwt
+   			$form.submit();
+   		$proctoring.classList.toggle("hidden",true);
+   		$assessment.classList.toggle("hidden",false);
+    }).catch(err => $error.textContent = err.message);
+   });
+
+    function tokenRequest(payload) {
+    	return fetch(window.location.pathname.replace("launch", "jwt"), {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer {{.Token}}",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      })
+      .then((r) => {
+   		if (r.status >= 400) {
+   			throw new Error(`${r.status} : ${r.statusText}`)
+   		}
+  	  return r.text();
+   	 })
+    }
+
+      window.addEventListener("message", (e) => {
+        console.log(e)
+  	 $message.value = JSON.stringify(e.data, null, 2) + "\n" + $message.value;
+    	});
+</script>

@@ -1,0 +1,117 @@
+<main class="container">
+  <hgroup><h2>Registration</h2></hgroup>
+  <div class="grid">
+    <article>
+      <hgroup><h3>Platform</h3></hgroup>
+      <form method="POST">
+        <label>
+          Issuer
+          <input
+            id="issuer"
+            name="issuer"
+            value="{{.Platform.Issuer}}"
+            required
+          />
+          <small>Platform ID, Audience</small>
+        </label>
+        <label>
+          Client ID
+          <input
+            id="client_id"
+            name="client_id"
+            value="{{.ClientId}}"
+            required
+          />
+        </label>
+        <label>
+          Deployment ID
+          <input
+            id="deployment_id"
+            name="deployment_id"
+            value="{{.DeploymentId}}"
+            required
+          />
+        </label>
+        <label>
+          Jwks URI
+          <input
+            id="jwks_uri"
+            name="jwks_uri"
+            value="{{.Platform.JwksUri}}"
+            required
+          />
+          <small>Public keyset URL</small>
+        </label>
+        <label>
+          Token Endpoint
+          <input
+            id="token_endpoint"
+            name="token_endpoint"
+            value="{{.Platform.TokenEndpoint}}"
+            required
+          />
+          <small>Access token URL, OAuth2 Access Token URL</small>
+        </label>
+        <label>
+          Authorization Endpoint
+          <input
+            id="authorization_endpoint"
+            name="authorization_endpoint"
+            value="{{.Platform.AuthorizationEndpoint}}"
+            required
+          />
+          <small>Authentication request URL, OIDC Auth URL</small>
+        </label>
+        <button type="submit">Submit</button>
+      </form>
+    </article>
+    <article>
+      <hgroup><h3>Tool</h3></hgroup>
+      <p>
+        Full configuration JSON
+        <a href="{{.Link}}" target="_blank">{{.Link}}</a>
+      </p>
+      <form>
+        <label>
+          Client Name
+          <input readonly value="{{.Tool.ClientName}}" />
+          <small>Name, Tool</small>
+        </label>
+        <label>
+          Target Link Uri
+          <input readonly value="{{.Tool.TargetLinkUri}}" />
+          <small>Tool url, Launch url</small>
+        </label>
+        <label>
+          Jwks URI
+          <input readonly value="{{.Tool.JwksUri}}" />
+          <small>Public keyset URL</small>
+        </label>
+        <label>
+          Initiate login Uri
+          <input readonly value="{{.Tool.InitiateLoginUri}}" />
+          <small>Login URL</small>
+        </label>
+        <label>
+          Redirection URI(s)
+          <textarea readonly>
+{{- range $uri := .Tool.RedirectUris}}
+{{$uri}}
+{{- end -}}
+      </textarea
+          >
+          <small>Request Uris</small>
+        </label>
+        <label>
+          Custom parameters
+          <textarea readonly>
+{{- range $key, $value := .Tool.CustomParameters}}
+{{$key}}={{$value}}
+{{- end -}}
+      </textarea
+          >
+        </label>
+      </form>
+    </article>
+  </div>
+</main>
