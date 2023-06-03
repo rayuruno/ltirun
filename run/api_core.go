@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/carlmjohnson/requests"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-querystring/query"
 	"github.com/google/uuid"
-	"github.com/rayuruno/ltirun/internal/check"
 	"github.com/rayuruno/ltirun/lti"
 )
 
@@ -116,23 +116,10 @@ func consumerId(providerUri string, i *lti.LoginInit) string {
 	return providerUri + " " + i.Iss + " " + i.ClientId + " " + i.DeploymentId
 }
 func getProviderTargetLinkUri(s *Session) (string, error) {
-	mtype, ok := s.Claims["https://purl.imsglobal.org/spec/lti/claim/message_type"].(string)
-	if !ok {
-		return "", fmt.Errorf("message type missing")
+	providerUri, _, _ := strings.Cut(s.Consumer.Id, " ")
+	provUrl, err := url.Parse("https://" + providerUri)
+	if err != nil {
+		return "", err
 	}
-	for _, pm := range s.Consumer.Tool.Messages {
-		if pm.Type != mtype {
-			continue
-		}
-		for _, r := range s.Claims["https://purl.imsglobal.org/spec/lti/claim/roles"].([]any) {
-			if check.ContainsAny(pm.Roles, r.(string)) {
-				pmProviderUri, ok := pm.CustomParameters["provider_uri"].(string)
-				if !ok {
-					return "", fmt.Errorf("provider_uri not found in tool msg custom parameters")
-				}
-				return pmProviderUri, nil
-			}
-		}
-	}
-	return "", fmt.Errorf("msg not matched with tool config")
+	return provUrl.JoinPath("lti/launch").String(), nil
 }

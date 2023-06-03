@@ -71,16 +71,14 @@ func proxyToolConfig(serviceUrl, providerUri string, t *lti.Tool) error {
 	initiateLoginUri := srvUrl.JoinPath("login").String() + "/" + providerUri
 	targetLinkUri := srvUrl.JoinPath("launch").String() + "/" + providerUri
 
-	providerTargetLinkUri := t.TargetLinkUri
-	if providerTargetLinkUri == "" {
-		providerTargetLinkUri = provUrl.JoinPath("lti/launch").String()
-	}
-	providerTargetLinkUrl, err := url.Parse(providerTargetLinkUri)
-	if err != nil {
-		return err
-	}
-	if provUrl.Hostname() != providerTargetLinkUrl.Hostname() {
-		return fmt.Errorf("host mismatch %s %s", providerUri, providerTargetLinkUrl)
+	if t.TargetLinkUri != "" {
+		providerTargetLinkUrl, err := url.Parse(t.TargetLinkUri)
+		if err != nil {
+			return err
+		}
+		if provUrl.Hostname() != providerTargetLinkUrl.Hostname() {
+			return fmt.Errorf("host mismatch %s %s", providerUri, providerTargetLinkUrl)
+		}
 	}
 	t.ApplicationType = "web"
 	t.ResponseTypes = []string{"id_token"}
@@ -99,26 +97,20 @@ func proxyToolConfig(serviceUrl, providerUri string, t *lti.Tool) error {
 		t.ClientUri = provUrl.String()
 	}
 	if len(t.Messages) == 0 {
-		t.Messages = defaultMessages(providerTargetLinkUri)
-	}
-	if len(t.CustomParameters) == 0 {
-		t.CustomParameters = make(map[string]any)
-	}
-	for i, m := range t.Messages {
-		if m.TargetLinkUri != "" {
-			mTargetLinkUrl, err := url.Parse(m.TargetLinkUri)
-			if err != nil {
-				return err
+		t.Messages = defaultMessages()
+	} else {
+		for i, m := range t.Messages {
+			if m.TargetLinkUri != "" {
+				mTargetLinkUrl, err := url.Parse(m.TargetLinkUri)
+				if err != nil {
+					return err
+				}
+				if provUrl.Hostname() != mTargetLinkUrl.Hostname() {
+					return fmt.Errorf("host mismatch %s %s", providerUri, mTargetLinkUrl)
+				}
 			}
-			if provUrl.Hostname() != mTargetLinkUrl.Hostname() {
-				return fmt.Errorf("host mismatch %s %s", providerUri, mTargetLinkUrl)
-			}
+			t.Messages[i].TargetLinkUri = targetLinkUri
 		}
-		if len(t.Messages[i].CustomParameters) == 0 {
-			t.Messages[i].CustomParameters = make(map[string]any)
-		}
-		t.Messages[i].CustomParameters["provider_uri"] = m.TargetLinkUri
-		t.Messages[i].TargetLinkUri = targetLinkUri
 	}
 	t.Scope = defaultScope
 	if len(t.Claims) == 0 {
@@ -148,38 +140,34 @@ var defaultClaims = []string{
 	"locale",
 }
 
-func defaultMessages(targetLinkUri string) []lti.LtiMessage {
+func defaultMessages() []lti.LtiMessage {
 	return []lti.LtiMessage{
 		{
-			Type:          "LtiResourceLinkRequest",
-			Label:         "Global Settings",
-			TargetLinkUri: targetLinkUri,
+			Type:  "LtiResourceLinkRequest",
+			Label: "Global Settings",
 			Roles: []string{
 				"https://purl.imsglobal.org/vocab/lis/v2/membership#Administrator",
 			},
 		},
 		{
-			Type:          "LtiDeepLinkingRequest",
-			Label:         "Settings",
-			TargetLinkUri: targetLinkUri,
+			Type:  "LtiDeepLinkingRequest",
+			Label: "Settings",
 			Roles: []string{
 				"https://purl.imsglobal.org/vocab/lis/v2/membership#Administrator",
 				"https://purl.imsglobal.org/vocab/lis/v2/membership#Instructor",
 			},
 		},
 		{
-			Type:          "LtiResourceLinkRequest",
-			Label:         "Start",
-			TargetLinkUri: targetLinkUri,
+			Type:  "LtiResourceLinkRequest",
+			Label: "Launch",
 			Roles: []string{
 				"https://purl.imsglobal.org/vocab/lis/v2/membership#Learner",
 				"https://purl.imsglobal.org/vocab/lis/v2/membership#Student",
 			},
 		},
 		{
-			Type:          "LtiStartProctoring",
-			Label:         "Start",
-			TargetLinkUri: targetLinkUri,
+			Type:  "LtiStartProctoring",
+			Label: "Launch",
 			Roles: []string{
 				"https://purl.imsglobal.org/vocab/lis/v2/membership#Learner",
 				"https://purl.imsglobal.org/vocab/lis/v2/membership#Student",
