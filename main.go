@@ -140,6 +140,13 @@ func main() {
 		return c.SendString(b)
 	}))
 	app.Post("/service/*", recoverable(func(c *fiber.Ctx) error {
+		log.Debug().Any("head", c.GetReqHeaders()).Msg("service")
+		if string(c.Context().Referer()) != c.BaseURL()+"/launch/"+c.Params("*") {
+			return fiber.ErrUnauthorized
+		}
+		if c.Get("Sec-Fetch-Site") != "same-origin" {
+			return fiber.ErrUnauthorized
+		}
 		sr := new(lti.ServiceRequest)
 		a := new(lti.AccessToken)
 		check(anyParser(c, sr))
@@ -150,6 +157,12 @@ func main() {
 		return c.SendStatus(200)
 	}))
 	app.Post("/jwt/*", recoverable(func(c *fiber.Ctx) error {
+		if string(c.Context().Referer()) != c.BaseURL()+"/launch/"+c.Params("*") {
+			return fiber.ErrUnauthorized
+		}
+		if c.Get("Sec-Fetch-Site") != "same-origin" {
+			return fiber.ErrUnauthorized
+		}
 		s, err := api.GetSession(jwksUri(c), bearer(c))
 		check(err)
 		j, err := api.SignJWT(s, bytes.Clone(c.Body()))

@@ -1,0 +1,64 @@
+<div class="grid">
+  <div>
+    <textarea id="message"></textarea>
+  </div>
+
+  <div>
+    <div id="proctoring">
+      <button id="button">Start Assessment</button>
+      <div id="error"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const data = JSON.parse({{.Data}});
+  console.debug(data);
+
+  let $message = document.querySelector("#message");
+  let $button = document.querySelector("#button");
+  let $error = document.querySelector("#error");
+
+  $message.value = JSON.stringify(data, null, 2);
+
+  let enpoint = data["https://purl.imsglobal.org/spec/lti-ags/claim/endpoint"];
+  let lineitem = enpoint["lineitem"].split("?");
+
+  $button.addEventListener("click", (e) => {
+    serviceRequest({
+      scope: enpoint["scope"].join(" "),
+      method: "POST",
+      content_type: "application/vnd.ims.lis.v1.score+json",
+      accept: "application/json",
+      endpoint: lineitem[0] + "/scores?" + lineitem[1],
+      body: {
+        timestamp: new Date().toISOString(),
+        userId: data["sub"],
+        comment: "Recording started.",
+        activityProgress: "Completed",
+        gradingProgress: "FullyGraded",
+        scoreGiven: 100,
+        scoreMaximum: 100,
+      },
+    });
+  });
+
+  function serviceRequest(req) {
+    fetch(window.location.pathname.replace("launch", "service"), {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer {{.Token}}",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(req),
+    })
+      .then((r) => {
+        if (r.status >= 400) {
+          return r.text();
+        }
+        return "OK";
+      })
+      .then((msg) => ($error.textContent = msg))
+      .catch((err) => ($error.textContent = err.message));
+  }
+</script>

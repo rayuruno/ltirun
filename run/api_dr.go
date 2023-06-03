@@ -165,13 +165,5 @@ func defaultMessages() []lti.LtiMessage {
 				"https://purl.imsglobal.org/vocab/lis/v2/membership#Student",
 			},
 		},
-		{
-			Type:  "LtiStartProctoring",
-			Label: "Launch",
-			Roles: []string{
-				"https://purl.imsglobal.org/vocab/lis/v2/membership#Learner",
-				"https://purl.imsglobal.org/vocab/lis/v2/membership#Student",
-			},
-		},
 	}
 }
