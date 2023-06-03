@@ -11,6 +11,7 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/go-querystring/query"
 	"github.com/google/uuid"
+	"github.com/rayuruno/ltirun/internal/check"
 	"github.com/rayuruno/ltirun/lti"
 )
 
@@ -82,7 +83,7 @@ func (api *Api) Authz(providerUri string, a *lti.AuthenticateResponse) (*Session
 	return s, nil
 }
 func (api *Api) Launch(s *Session, b *string) error {
-	uri, err := targetLinkUriFromToken(s.Claims)
+	uri, err := getProviderTargetLinkUri(s)
 	if err != nil {
 		return err
 	}
@@ -114,18 +115,24 @@ func (api *Api) Launch(s *Session, b *string) error {
 func consumerId(providerUri string, i *lti.LoginInit) string {
 	return providerUri + " " + i.Iss + " " + i.ClientId + " " + i.DeploymentId
 }
-func targetLinkUriFromToken(claims jwt.MapClaims) (string, error) {
-	mtype, ok := claims["https://purl.imsglobal.org/spec/lti/claim/message_type"].(string)
+func getProviderTargetLinkUri(s *Session) (string, error) {
+	mtype, ok := s.Claims["https://purl.imsglobal.org/spec/lti/claim/message_type"].(string)
 	if !ok {
-		return "", fmt.Errorf("invalid token")
+		return "", fmt.Errorf("message type missing")
 	}
-	custom, ok := claims["https://purl.imsglobal.org/spec/lti/claim/custom"].(map[string]any)
-	if !ok {
-		return "", fmt.Errorf("invalid token")
+	for _, pm := range s.Consumer.Tool.Messages {
+		if pm.Type != mtype {
+			continue
+		}
+		for _, r := range s.Claims["https://purl.imsglobal.org/spec/lti/claim/roles"].([]any) {
+			if check.ContainsAny(pm.Roles, r.(string)) {
+				pmProviderUri, ok := pm.CustomParameters["provider_uri"].(string)
+				if !ok {
+					return "", fmt.Errorf("provider_uri not found in tool msg custom parameters")
+				}
+				return pmProviderUri, nil
+			}
+		}
 	}
-	uri, ok := custom[mtype].(string)
-	if !ok {
-		return "", fmt.Errorf("invalid token")
-	}
-	return uri, nil
+	return "", fmt.Errorf("msg not matched with tool config")
 }

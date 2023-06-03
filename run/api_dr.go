@@ -114,7 +114,10 @@ func proxyToolConfig(serviceUrl, providerUri string, t *lti.Tool) error {
 				return fmt.Errorf("host mismatch %s %s", providerUri, mTargetLinkUrl)
 			}
 		}
-		t.CustomParameters[m.Type] = m.TargetLinkUri
+		if len(t.Messages[i].CustomParameters) == 0 {
+			t.Messages[i].CustomParameters = make(map[string]any)
+		}
+		t.Messages[i].CustomParameters["provider_uri"] = m.TargetLinkUri
 		t.Messages[i].TargetLinkUri = targetLinkUri
 	}
 	t.Scope = defaultScope
