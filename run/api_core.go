@@ -72,6 +72,9 @@ func (api *Api) Authz(providerUri string, a *lti.AuthenticateResponse) (*Session
 		return nil, err
 	}
 	s := &Session{Id: uuid.NewString(), Consumer: c, Claims: token.Claims.(jwt.MapClaims)}
+	if s.Claims["nonce"] != hashid(a.State) {
+		return nil, fmt.Errorf("invalid nonce")
+	}
 	exp, err := token.Claims.GetExpirationTime()
 	if err != nil {
 		return nil, err
