@@ -64,6 +64,9 @@ func proxyToolConfig(serviceUrl, providerUri string, t *lti.Tool) error {
 	if err != nil {
 		return err
 	}
+	if !strings.Contains(provUrl.Hostname(), ".") {
+		return fmt.Errorf("invalid provider uri %s, host missing", providerUri)
+	}
 	jwksUri := srvUrl.JoinPath("jwks").String() + "/" + providerUri
 	initiateLoginUri := srvUrl.JoinPath("login").String() + "/" + providerUri
 	targetLinkUri := srvUrl.JoinPath("launch").String() + "/" + providerUri
@@ -76,8 +79,8 @@ func proxyToolConfig(serviceUrl, providerUri string, t *lti.Tool) error {
 	if err != nil {
 		return err
 	}
-	if strings.Count(providerTargetLinkUrl.Hostname(), ".") < 1 {
-		return fmt.Errorf("invalid provider uri %s, host missing", providerUri)
+	if provUrl.Hostname() != providerTargetLinkUrl.Hostname() {
+		return fmt.Errorf("host mismatch %s %s", providerUri, providerTargetLinkUrl)
 	}
 	t.ApplicationType = "web"
 	t.ResponseTypes = []string{"id_token"}
@@ -102,6 +105,15 @@ func proxyToolConfig(serviceUrl, providerUri string, t *lti.Tool) error {
 		t.CustomParameters = make(map[string]any)
 	}
 	for i, m := range t.Messages {
+		if m.TargetLinkUri != "" {
+			mTargetLinkUrl, err := url.Parse(m.TargetLinkUri)
+			if err != nil {
+				return err
+			}
+			if provUrl.Hostname() != mTargetLinkUrl.Hostname() {
+				return fmt.Errorf("host mismatch %s %s", providerUri, mTargetLinkUrl)
+			}
+		}
 		t.CustomParameters[m.Type] = m.TargetLinkUri
 		t.Messages[i].TargetLinkUri = targetLinkUri
 	}
