@@ -6,7 +6,7 @@ require (
 	github.com/MicahParks/jwkset v0.3.1
 	github.com/MicahParks/keyfunc/v2 v2.0.3
 	github.com/carlmjohnson/requests v0.23.1
-	github.com/gofiber/fiber/v2 v2.52.1
+	github.com/gofiber/fiber/v2 v2.52.5
 	github.com/gofiber/storage/redis/v2 v2.0.1
 	github.com/golang-jwt/jwt/v5 v5.0.0
 	github.com/google/go-querystring v1.1.0
